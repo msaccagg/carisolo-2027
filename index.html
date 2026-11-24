@@ -292,6 +292,8 @@
   </div>
 
   <script>
+    const API_URL = "";
+    const FAMILY_KEY = "";
     const STORAGE_KEY = "carisolo_2027_bookings_v4";
 
     const PROFILES = [
@@ -383,6 +385,8 @@
     let selectedProfileId = PROFILES[0].id;
     let draftSlots = cloneSlots(PROFILES[0].defaultSlots);
     let bookings = loadBookings();
+    let bookingsRevision = 0;
+    let pendingServerSave = Promise.resolve();
 
     function cloneSlots(slotsObj) {
       return {
@@ -421,6 +425,47 @@
 
     function saveBookings() {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(bookings));
+      bookingsRevision += 1;
+
+      if (!API_URL) return;
+
+      const payload = JSON.stringify(bookings);
+      pendingServerSave = pendingServerSave.catch(() => {}).then(async () => {
+        const headers = { "Content-Type": "application/json" };
+        if (FAMILY_KEY) headers["X-Carisolo-Key"] = FAMILY_KEY;
+
+        const response = await fetch(API_URL, {
+          method: "POST",
+          headers,
+          body: payload
+        });
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+      }).catch(() => {
+        alert("Impossibile sincronizzare con il server. Le prenotazioni sono state conservate su questo dispositivo.");
+      });
+    }
+
+    async function loadServerBookings() {
+      if (!API_URL) return;
+
+      const revisionAtRequest = bookingsRevision;
+      try {
+        const headers = {};
+        if (FAMILY_KEY) headers["X-Carisolo-Key"] = FAMILY_KEY;
+
+        const response = await fetch(API_URL, { cache: "no-store", headers });
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+
+        const serverBookings = await response.json();
+        if (!Array.isArray(serverBookings)) throw new Error("Risposta API non valida");
+        if (bookingsRevision !== revisionAtRequest) return;
+
+        bookings = serverBookings;
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(bookings));
+        renderCalendar();
+      } catch (error) {
+        console.warn("Caricamento prenotazioni dal server non riuscito; uso i dati locali.", error);
+      }
     }
 
     function formatDateISO(dateObj) {
@@ -1009,6 +1054,7 @@
     renderWhoIsWho();
     populateWholeHouseSelect();
     renderCalendar();
+    void loadServerBookings();
   </script>
 </body>
 </html>
