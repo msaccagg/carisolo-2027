@@ -1,0 +1,1014 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <title>Carisolo Ski Planner 2027</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      -webkit-tap-highlight-color: transparent;
+    }
+  </style>
+</head>
+<body class="bg-slate-100 text-slate-800 min-h-screen pb-8">
+  <div class="max-w-6xl mx-auto px-2.5 sm:px-4 py-3 sm:py-5 space-y-4">
+
+    <!-- Header superiore -->
+    <header class="bg-[#0b3b1e] text-white rounded-2xl px-4 py-3.5 shadow-sm">
+      <div class="flex items-center gap-2.5">
+        <span class="text-2xl leading-none">⛷️</span>
+        <div>
+          <h1 class="text-xl sm:text-2xl font-bold tracking-tight leading-tight">Carisolo Ski Planner 2027</h1>
+          <p class="text-xs sm:text-sm text-emerald-100 mt-0.5">
+            1 Gennaio – 28 Febbraio 2027 • 6 posti fissi + 2 lettini da campeggio
+            <span class="font-bold text-sky-300">+ 1 carrozzina</span>
+          </p>
+        </div>
+      </div>
+    </header>
+
+    <!-- Due card superiori: Capienza casa & Stato giorni -->
+    <section class="grid grid-cols-1 md:grid-cols-2 gap-3.5">
+      <div class="bg-white rounded-2xl p-4 shadow-sm border border-slate-200/80 flex items-center justify-between gap-3">
+        <div>
+          <div class="text-[11px] font-bold uppercase tracking-wider text-slate-400">Capienza casa</div>
+          <div class="text-lg sm:text-xl font-extrabold text-slate-900 mt-1">
+            6 fissi + 2 lettini da campeggio <span class="text-sky-600">+ 1 carrozzina</span>
+          </div>
+          <div class="text-xs text-slate-500 mt-1">Matrimoniale (2) • Divano (2) • Castello (2)</div>
+        </div>
+        <div class="text-3xl sm:text-4xl select-none shrink-0" aria-hidden="true">🏔️</div>
+      </div>
+
+      <div class="bg-white rounded-2xl p-4 shadow-sm border border-slate-200/80 flex items-center justify-between gap-3">
+        <div>
+          <div class="text-[11px] font-bold uppercase tracking-wider text-slate-400">Stato giorni (Gen – Feb 2027)</div>
+          <div id="dayStatsBadges" class="flex flex-wrap items-center gap-2 mt-2"></div>
+        </div>
+        <div class="text-3xl sm:text-4xl select-none shrink-0" aria-hidden="true">🗓️</div>
+      </div>
+    </section>
+
+    <!-- Barra comandi + Chi è chi -->
+    <section class="bg-white rounded-2xl p-3.5 sm:p-4 shadow-sm border border-slate-200/80 space-y-3.5">
+      <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2.5">
+        <button
+          type="button"
+          onclick="scrollToCalendar()"
+          class="min-h-[42px] px-4 py-2 rounded-xl bg-emerald-700 active:bg-emerald-800 text-white font-bold text-xs sm:text-sm shadow-xs inline-flex items-center justify-center sm:justify-start gap-2 cursor-pointer"
+        >
+          <span>📅</span>
+          <span>Calendario Giornaliero</span>
+        </button>
+
+        <div class="grid grid-cols-2 sm:flex items-center gap-2">
+          <button
+            type="button"
+            onclick="openWholeHouseModal()"
+            class="min-h-[42px] px-3.5 py-2 rounded-xl bg-amber-400 active:bg-amber-300 text-slate-950 font-bold text-xs sm:text-sm shadow-xs cursor-pointer"
+          >
+            🏡 Tutta la casa
+          </button>
+          <button
+            type="button"
+            onclick="openBookingModal()"
+            class="min-h-[42px] px-3.5 py-2 rounded-xl bg-emerald-600 active:bg-emerald-500 text-white font-bold text-xs sm:text-sm shadow-xs cursor-pointer"
+          >
+            + Nuova Prenotazione
+          </button>
+        </div>
+      </div>
+
+      <div class="pt-3 border-t border-slate-100 flex flex-wrap items-center gap-2">
+        <span class="text-[11px] font-bold uppercase tracking-wider text-slate-400 mr-1">Chi è chi:</span>
+        <div id="whoIsWhoChips" class="flex flex-wrap items-center gap-1.5 sm:gap-2"></div>
+      </div>
+    </section>
+
+    <!-- Calendario giornaliero Gennaio + Febbraio 2027 -->
+    <main id="calendarContainer" class="space-y-4 sm:space-y-6"></main>
+  </div>
+
+  <!-- Modale Nuova / Modifica Prenotazione -->
+  <div id="bookingModal" class="fixed inset-0 z-50 hidden bg-slate-950/60 items-end sm:items-center justify-center p-0 sm:p-4">
+    <div class="bg-white rounded-t-3xl sm:rounded-2xl max-w-xl w-full p-4 sm:p-6 shadow-2xl space-y-4 max-h-[92vh] overflow-y-auto">
+      <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+        <div>
+          <h3 id="bookingModalTitle" class="text-base sm:text-lg font-bold text-slate-900">Nuova Prenotazione</h3>
+          <p class="text-xs text-slate-500">Flagga uno o più posti sui letti disponibili (ogni letto ha 2 slot cliccabili)</p>
+        </div>
+        <button type="button" onclick="closeBookingModal()" class="w-9 h-9 rounded-full bg-slate-100 active:bg-slate-200 text-slate-700 font-bold cursor-pointer">
+          ✕
+        </button>
+      </div>
+
+      <form id="bookingForm" onsubmit="saveBooking(event)" class="space-y-4">
+        <input type="hidden" id="editingBookingId" />
+
+        <!-- 1. Chi prenota -->
+        <div>
+          <label class="block text-xs font-bold uppercase tracking-wide text-slate-600 mb-2">1. Chi prenota?</label>
+          <div id="profileSelector" class="grid grid-cols-2 sm:grid-cols-3 gap-2"></div>
+        </div>
+
+        <!-- 2. Flag su letti, lettini da campeggio e carrozzina -->
+        <div class="bg-slate-50 border border-slate-200 rounded-2xl p-3 space-y-2.5">
+          <div class="flex items-center justify-between gap-2">
+            <span class="text-xs font-bold uppercase tracking-wide text-slate-700">2. Letti e posti da flaggare</span>
+            <button
+              type="button"
+              onclick="clearAllBedFlags()"
+              class="text-[11px] font-semibold text-slate-500 hover:text-slate-800 underline cursor-pointer"
+            >
+              Svuota flag
+            </button>
+          </div>
+          <div id="bedSlotsContainer" class="space-y-2"></div>
+        </div>
+
+        <!-- 3. Date -->
+        <div class="grid grid-cols-2 gap-2.5 sm:gap-3">
+          <div>
+            <label for="startDate" class="block text-xs font-bold uppercase tracking-wide text-slate-600 mb-1">Dal giorno</label>
+            <input
+              type="date"
+              id="startDate"
+              min="2027-01-01"
+              max="2027-02-28"
+              required
+              onchange="updatePreview()"
+              class="w-full rounded-xl border border-slate-300 px-2.5 py-2 text-base sm:text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
+            />
+          </div>
+          <div>
+            <label for="endDate" class="block text-xs font-bold uppercase tracking-wide text-slate-600 mb-1">Al giorno</label>
+            <input
+              type="date"
+              id="endDate"
+              min="2027-01-01"
+              max="2027-02-28"
+              required
+              onchange="updatePreview()"
+              class="w-full rounded-xl border border-slate-300 px-2.5 py-2 text-base sm:text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
+            />
+          </div>
+        </div>
+
+        <!-- 4. Note -->
+        <div>
+          <label for="bookingNote" class="block text-xs font-bold uppercase tracking-wide text-slate-600 mb-1">Note / Ospiti (opzionale)</label>
+          <input
+            type="text"
+            id="bookingNote"
+            placeholder="Es. con ragazza, con amici, arrivo pomeriggio..."
+            class="w-full rounded-xl border border-slate-300 px-3 py-2 text-base sm:text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
+          />
+        </div>
+
+        <div id="allocationPreview" class="bg-white border border-slate-200 rounded-xl p-3 text-xs space-y-1.5"></div>
+
+        <div class="flex items-center justify-between pt-2 border-t border-slate-100 gap-2">
+          <button
+            type="button"
+            id="deleteBookingBtn"
+            onclick="deleteCurrentBooking()"
+            class="hidden min-h-[42px] px-3.5 py-2 rounded-xl bg-rose-50 active:bg-rose-100 text-rose-700 font-semibold text-sm cursor-pointer"
+          >
+            Elimina
+          </button>
+          <div class="flex items-center gap-2 ml-auto">
+            <button
+              type="button"
+              onclick="closeBookingModal()"
+              class="min-h-[42px] px-3.5 py-2 rounded-xl bg-slate-100 active:bg-slate-200 text-slate-700 font-semibold text-sm cursor-pointer"
+            >
+              Annulla
+            </button>
+            <button
+              type="submit"
+              class="min-h-[42px] px-4 py-2 rounded-xl bg-emerald-600 active:bg-emerald-500 text-white font-semibold text-sm shadow cursor-pointer"
+            >
+              Salva
+            </button>
+          </div>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Modale Tutta la casa -->
+  <div id="wholeHouseModal" class="fixed inset-0 z-50 hidden bg-slate-950/60 items-end sm:items-center justify-center p-0 sm:p-4">
+    <div class="bg-white rounded-t-3xl sm:rounded-2xl max-w-lg w-full p-4 sm:p-6 shadow-2xl space-y-4 max-h-[92vh] overflow-y-auto">
+      <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+        <div>
+          <h3 class="text-base sm:text-lg font-bold text-slate-900">🏡 Tutta la casa</h3>
+          <p class="text-xs text-slate-500">Prenota a prescindere o libera i giorni scelti</p>
+        </div>
+        <button type="button" onclick="closeWholeHouseModal()" class="w-9 h-9 rounded-full bg-slate-100 active:bg-slate-200 text-slate-700 font-bold cursor-pointer">
+          ✕
+        </button>
+      </div>
+
+      <form id="wholeHouseForm" onsubmit="bookWholeHouse(event)" class="space-y-4">
+        <div>
+          <label for="wholeHouseProfile" class="block text-xs font-bold uppercase tracking-wide text-slate-600 mb-1">Chi riserva tutta la casa?</label>
+          <select
+            id="wholeHouseProfile"
+            class="w-full rounded-xl border border-slate-300 px-3 py-2 text-base sm:text-sm bg-white focus:outline-none focus:ring-2 focus:ring-amber-400"
+          ></select>
+        </div>
+
+        <div class="grid grid-cols-2 gap-2.5 sm:gap-3">
+          <div>
+            <label for="whStartDate" class="block text-xs font-bold uppercase tracking-wide text-slate-600 mb-1">Dal giorno</label>
+            <input
+              type="date"
+              id="whStartDate"
+              value="2027-01-01"
+              min="2027-01-01"
+              max="2027-02-28"
+              required
+              class="w-full rounded-xl border border-slate-300 px-2.5 py-2 text-base sm:text-sm focus:outline-none focus:ring-2 focus:ring-amber-400"
+            />
+          </div>
+          <div>
+            <label for="whEndDate" class="block text-xs font-bold uppercase tracking-wide text-slate-600 mb-1">Al giorno</label>
+            <input
+              type="date"
+              id="whEndDate"
+              value="2027-02-28"
+              min="2027-01-01"
+              max="2027-02-28"
+              required
+              class="w-full rounded-xl border border-slate-300 px-2.5 py-2 text-base sm:text-sm focus:outline-none focus:ring-2 focus:ring-amber-400"
+            />
+          </div>
+        </div>
+
+        <div>
+          <label for="whNote" class="block text-xs font-bold uppercase tracking-wide text-slate-600 mb-1">Note</label>
+          <input
+            type="text"
+            id="whNote"
+            placeholder="Es. prenotazione intera casa"
+            class="w-full rounded-xl border border-slate-300 px-3 py-2 text-base sm:text-sm focus:outline-none focus:ring-2 focus:ring-amber-400"
+          />
+        </div>
+
+        <div class="bg-amber-50 border border-amber-200 rounded-xl p-3 text-xs text-amber-950 space-y-1">
+          <p class="font-bold">Come funziona "Tutta la casa":</p>
+          <p>• <strong>Prenota a prescindere:</strong> assegna tutta la casa (6 fissi + 2 lettini da campeggio) nel periodo scelto.</p>
+          <p>• <strong>Libera periodo:</strong> rimuove o ritaglia le prenotazioni nell'intervallo scelto.</p>
+        </div>
+
+        <div class="flex flex-wrap items-center justify-between pt-2 border-t border-slate-100 gap-2">
+          <button
+            type="button"
+            onclick="freePeriod()"
+            class="min-h-[42px] px-3 py-2 rounded-xl bg-rose-50 active:bg-rose-100 text-rose-700 font-semibold text-xs sm:text-sm cursor-pointer"
+          >
+            🧹 Libera
+          </button>
+          <div class="flex items-center gap-2 ml-auto">
+            <button
+              type="button"
+              onclick="closeWholeHouseModal()"
+              class="min-h-[42px] px-3 py-2 rounded-xl bg-slate-100 active:bg-slate-200 text-slate-700 font-semibold text-xs sm:text-sm cursor-pointer"
+            >
+              Annulla
+            </button>
+            <button
+              type="submit"
+              class="min-h-[42px] px-3.5 py-2 rounded-xl bg-amber-400 active:bg-amber-300 text-slate-950 font-bold text-xs sm:text-sm shadow cursor-pointer"
+            >
+              🏡 Prenota a prescindere
+            </button>
+          </div>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script>
+    const STORAGE_KEY = "carisolo_2027_bookings_v4";
+
+    const PROFILES = [
+      {
+        id: "mamma_papa",
+        name: "Mamma e Papà",
+        shortName: "Mamma/Papà",
+        defaultSlots: {
+          matrimoniale: [true, true],
+          divano: [false, false],
+          castello: [false, false],
+          campeggio: [false, false],
+          carrozzina: [false]
+        },
+        chipClass: "bg-teal-100 text-teal-950 border-teal-200",
+        dotClass: "bg-teal-600",
+        pillClass: "bg-teal-100 text-teal-950 border-teal-300"
+      },
+      {
+        id: "maddi_fam",
+        name: "Maddi e fam",
+        shortName: "Maddi",
+        defaultSlots: {
+          matrimoniale: [true, true],
+          divano: [false, false],
+          castello: [true, false],
+          campeggio: [true, false],
+          carrozzina: [true]
+        },
+        chipClass: "bg-sky-100 text-sky-950 border-sky-200",
+        dotClass: "bg-sky-500",
+        pillClass: "bg-sky-100 text-sky-950 border-sky-300"
+      },
+      {
+        id: "marta_fam",
+        name: "Marta e fam",
+        shortName: "Marta",
+        defaultSlots: {
+          matrimoniale: [true, true],
+          divano: [false, false],
+          castello: [true, false],
+          campeggio: [true, false],
+          carrozzina: [false]
+        },
+        chipClass: "bg-emerald-100 text-emerald-950 border-emerald-200",
+        dotClass: "bg-emerald-600",
+        pillClass: "bg-emerald-100 text-emerald-950 border-emerald-300"
+      },
+      {
+        id: "jack",
+        name: "Jack",
+        shortName: "Jack",
+        defaultSlots: {
+          matrimoniale: [true, false],
+          divano: [false, false],
+          castello: [false, false],
+          campeggio: [false, false],
+          carrozzina: [false]
+        },
+        chipClass: "bg-amber-100 text-amber-950 border-amber-200",
+        dotClass: "bg-amber-500",
+        pillClass: "bg-amber-100 text-amber-950 border-amber-300"
+      },
+      {
+        id: "simo",
+        name: "Simo",
+        shortName: "Simo",
+        defaultSlots: {
+          matrimoniale: [true, false],
+          divano: [false, false],
+          castello: [false, false],
+          campeggio: [false, false],
+          carrozzina: [false]
+        },
+        chipClass: "bg-purple-100 text-purple-950 border-purple-200",
+        dotClass: "bg-purple-600",
+        pillClass: "bg-purple-100 text-purple-950 border-purple-300"
+      }
+    ];
+
+    const BED_GROUPS = [
+      { key: "matrimoniale", label: "Letto matrimoniale", count: 2, isFixed: true, isCot: false, isStroller: false, slotNames: ["Posto 1", "Posto 2"] },
+      { key: "divano", label: "Divano letto", count: 2, isFixed: true, isCot: false, isStroller: false, slotNames: ["Posto 1", "Posto 2"] },
+      { key: "castello", label: "Letto a castello", count: 2, isFixed: true, isCot: false, isStroller: false, slotNames: ["Posto 1", "Posto 2"] },
+      { key: "campeggio", label: "Lettino da campeggio", count: 2, isFixed: false, isCot: true, isStroller: false, slotNames: ["Lettino 1", "Lettino 2"] },
+      { key: "carrozzina", label: "Carrozzina", count: 1, isFixed: false, isCot: false, isStroller: true, slotNames: ["+ 1 carrozzina"] }
+    ];
+
+    let selectedProfileId = PROFILES[0].id;
+    let draftSlots = cloneSlots(PROFILES[0].defaultSlots);
+    let bookings = loadBookings();
+
+    function cloneSlots(slotsObj) {
+      return {
+        matrimoniale: [...(slotsObj.matrimoniale || [false, false])],
+        divano: [...(slotsObj.divano || [false, false])],
+        castello: [...(slotsObj.castello || [false, false])],
+        campeggio: [...(slotsObj.campeggio || [false, false])],
+        carrozzina: [...(slotsObj.carrozzina || [false])]
+      };
+    }
+
+    function getWholeHouseSlots() {
+      return {
+        matrimoniale: [true, true],
+        divano: [true, true],
+        castello: [true, true],
+        campeggio: [true, true],
+        carrozzina: [true]
+      };
+    }
+
+    function getProfile(id) {
+      return PROFILES.find((p) => p.id === id) || PROFILES[0];
+    }
+
+    function loadBookings() {
+      try {
+        const raw = localStorage.getItem(STORAGE_KEY);
+        if (!raw) return [];
+        const parsed = JSON.parse(raw);
+        return Array.isArray(parsed) ? parsed : [];
+      } catch (e) {
+        return [];
+      }
+    }
+
+    function saveBookings() {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(bookings));
+    }
+
+    function formatDateISO(dateObj) {
+      const y = dateObj.getFullYear();
+      const m = String(dateObj.getMonth() + 1).padStart(2, "0");
+      const d = String(dateObj.getDate()).padStart(2, "0");
+      return `${y}-${m}-${d}`;
+    }
+
+    function parseDateISO(isoStr) {
+      const [y, m, d] = isoStr.split("-").map(Number);
+      return new Date(y, m - 1, d);
+    }
+
+    function getAllDatesInSeason() {
+      const list = [];
+      const cur = new Date(2027, 0, 1);
+      const end = new Date(2027, 1, 28);
+      while (cur <= end) {
+        list.push(formatDateISO(cur));
+        cur.setDate(cur.getDate() + 1);
+      }
+      return list;
+    }
+
+    function getBookingsForDate(isoDate) {
+      return bookings.filter((b) => isoDate >= b.startDate && isoDate <= b.endDate);
+    }
+
+    function summarizeSlots(slots) {
+      const s = cloneSlots(slots);
+      const matUsed = s.matrimoniale.filter(Boolean).length;
+      const divUsed = s.divano.filter(Boolean).length;
+      const castUsed = s.castello.filter(Boolean).length;
+      const campUsed = s.campeggio.filter(Boolean).length;
+      const carrUsed = s.carrozzina.filter(Boolean).length;
+      const fixedUsed = matUsed + divUsed + castUsed;
+      return { matUsed, divUsed, castUsed, campUsed, carrUsed, fixedUsed };
+    }
+
+    function computeDayState(dayBookings) {
+      const usedSlots = {
+        matrimoniale: [false, false],
+        divano: [false, false],
+        castello: [false, false],
+        campeggio: [false, false],
+        carrozzina: [false]
+      };
+
+      let overflowFixed = 0;
+      let overflowCamp = 0;
+
+      dayBookings.forEach((b) => {
+        const bSlots = b.wholeHouse ? getWholeHouseSlots() : cloneSlots(b.slots || getProfile(b.profileId).defaultSlots);
+        BED_GROUPS.forEach((g) => {
+          bSlots[g.key].forEach((val) => {
+            if (!val) return;
+            const freeIdx = usedSlots[g.key].findIndex((u) => !u);
+            if (freeIdx !== -1) {
+              usedSlots[g.key][freeIdx] = true;
+            } else if (g.isFixed) {
+              overflowFixed += 1;
+            } else if (g.isCot) {
+              overflowCamp += 1;
+            }
+          });
+        });
+      });
+
+      const sum = summarizeSlots(usedSlots);
+      const freeFixed = Math.max(0, 6 - sum.fixedUsed);
+      const freeCamp = Math.max(0, 2 - sum.campUsed);
+      const totalUsed = sum.fixedUsed + sum.campUsed + overflowFixed + overflowCamp;
+
+      let status = "free";
+      if (dayBookings.length === 0) {
+        status = "free";
+      } else if (totalUsed >= 8) {
+        status = "full";
+      } else {
+        status = "partial";
+      }
+
+      return {
+        usedSlots,
+        sum,
+        freeFixed,
+        freeCamp,
+        overflowFixed,
+        overflowCamp,
+        status
+      };
+    }
+
+    function renderTopStats() {
+      const dates = getAllDatesInSeason();
+      let freeCount = 0;
+      let partialCount = 0;
+      let fullCount = 0;
+
+      dates.forEach((iso) => {
+        const st = computeDayState(getBookingsForDate(iso)).status;
+        if (st === "free") freeCount++;
+        else if (st === "partial") partialCount++;
+        else fullCount++;
+      });
+
+      document.getElementById("dayStatsBadges").innerHTML = `
+        <span class="px-2.5 py-1 rounded-full text-xs font-bold bg-emerald-100 text-emerald-900">${freeCount} liberi</span>
+        <span class="px-2.5 py-1 rounded-full text-xs font-bold bg-amber-100 text-amber-950">${partialCount} parziali</span>
+        <span class="px-2.5 py-1 rounded-full text-xs font-bold bg-rose-100 text-rose-900">${fullCount} completi</span>
+      `;
+    }
+
+    function renderWhoIsWho() {
+      const container = document.getElementById("whoIsWhoChips");
+      container.innerHTML = PROFILES.map(
+        (p) => `
+          <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full border text-xs font-bold ${p.chipClass}">
+            <span class="w-2 h-2 rounded-full ${p.dotClass}"></span>
+            <span>${p.name}</span>
+          </span>
+        `
+      ).join("");
+    }
+
+    function scrollToCalendar() {
+      const el = document.getElementById("calendarContainer");
+      if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+
+    function renderMonthGrid(year, monthIndex, monthTitle) {
+      const firstDay = new Date(year, monthIndex, 1);
+      const lastDay = new Date(year, monthIndex + 1, 0);
+      const daysInMonth = lastDay.getDate();
+
+      const startWeekday = (firstDay.getDay() + 6) % 7;
+      const weekdays = ["L", "M", "M", "G", "V", "S", "D"];
+
+      let cellsHtml = "";
+      for (let i = 0; i < startWeekday; i++) {
+        cellsHtml += `<div class="min-h-[84px] sm:min-h-[116px] rounded-lg sm:rounded-xl bg-slate-50/70 border border-dashed border-slate-200"></div>`;
+      }
+
+      for (let day = 1; day <= daysInMonth; day++) {
+        const dateObj = new Date(year, monthIndex, day);
+        const isoDate = formatDateISO(dateObj);
+        const dayBookings = getBookingsForDate(isoDate);
+        const state = computeDayState(dayBookings);
+        const isWeekend = dateObj.getDay() === 0 || dateObj.getDay() === 6;
+
+        const pillsHtml = dayBookings
+          .map((b) => {
+            const p = getProfile(b.profileId);
+            const tag = b.wholeHouse ? "🏡" : "";
+            const s = summarizeSlots(b.wholeHouse ? getWholeHouseSlots() : (b.slots || p.defaultSlots));
+            const extraTag = s.campUsed > 0 ? ` +${s.campUsed}lc` : "";
+            return `
+              <button
+                type="button"
+                onclick="event.stopPropagation(); openEditBooking('${b.id}')"
+                title="${p.name}${b.note ? " — " + b.note : ""}"
+                class="w-full text-left px-1 sm:px-2 py-0.5 sm:py-1 rounded border text-[9px] sm:text-[11px] font-bold truncate transition ${p.pillClass}"
+              >
+                ${tag}<span class="sm:hidden">${p.shortName}${extraTag}</span><span class="hidden sm:inline">${p.name}${extraTag}</span>
+              </button>
+            `;
+          })
+          .join("");
+
+        let statusBadge = "";
+        if (state.overflowFixed > 0 || state.overflowCamp > 0) {
+          statusBadge = `<span class="px-1 py-0.5 rounded bg-rose-100 text-rose-800 text-[8px] sm:text-[10px] font-bold leading-tight">Extra</span>`;
+        } else if (dayBookings.length > 0) {
+          statusBadge = `<span class="px-1 py-0.5 rounded bg-slate-100 text-slate-700 text-[8px] sm:text-[10px] font-semibold leading-tight">${state.freeFixed}f•${state.freeCamp}lc</span>`;
+        }
+
+        const strollerBadge =
+          state.sum.carrUsed > 0
+            ? `<span class="inline-block px-1 py-0.5 rounded bg-sky-100 text-sky-900 text-[8px] sm:text-[10px] font-bold leading-tight">+1 carr.</span>`
+            : "";
+
+        cellsHtml += `
+          <div
+            onclick="openBookingModal('${isoDate}')"
+            class="min-h-[86px] sm:min-h-[120px] rounded-lg sm:rounded-xl border ${isWeekend ? "border-emerald-200 bg-emerald-50/25" : "border-slate-200 bg-white"} p-1 sm:p-2 flex flex-col justify-between active:border-emerald-500 transition cursor-pointer"
+          >
+            <div class="space-y-1">
+              <div class="flex items-center justify-between gap-0.5">
+                <span class="text-[11px] sm:text-xs font-bold ${isWeekend ? "text-emerald-800" : "text-slate-700"}">${day}</span>
+                ${statusBadge}
+              </div>
+              <div class="space-y-0.5 sm:space-y-1">${pillsHtml}</div>
+            </div>
+            <div class="pt-1 flex items-center justify-between gap-0.5">
+              ${strollerBadge}
+            </div>
+          </div>
+        `;
+      }
+
+      return `
+        <section class="bg-white rounded-2xl p-2.5 sm:p-5 shadow-sm border border-slate-200/80">
+          <div class="flex items-center justify-between mb-2.5 sm:mb-4 px-1">
+            <h2 class="text-base sm:text-lg font-bold text-slate-900">${monthTitle}</h2>
+            <span class="text-[10px] sm:text-xs text-slate-500">6 fissi + 2 lettini da campeggio <span class="text-sky-600 font-semibold">+ 1 carrozzina</span></span>
+          </div>
+          <div class="grid grid-cols-7 gap-1 sm:gap-1.5 mb-1 text-center text-[10px] sm:text-[11px] font-bold uppercase text-slate-500">
+            ${weekdays.map((w) => `<div class="py-0.5">${w}</div>`).join("")}
+          </div>
+          <div class="grid grid-cols-7 gap-1 sm:gap-1.5">
+            ${cellsHtml}
+          </div>
+        </section>
+      `;
+    }
+
+    function renderCalendar() {
+      const container = document.getElementById("calendarContainer");
+      container.innerHTML =
+        renderMonthGrid(2027, 0, "Gennaio 2027") +
+        renderMonthGrid(2027, 1, "Febbraio 2027");
+      renderTopStats();
+    }
+
+    function renderProfileSelector() {
+      const container = document.getElementById("profileSelector");
+      container.innerHTML = PROFILES.map((p) => {
+        const active = p.id === selectedProfileId;
+        return `
+          <button
+            type="button"
+            onclick="selectProfile('${p.id}')"
+            class="text-left p-2.5 rounded-xl border-2 transition cursor-pointer ${
+              active ? "border-emerald-600 bg-emerald-50/70" : "border-slate-200 bg-white"
+            }"
+          >
+            <div class="flex items-center justify-between gap-1">
+              <span class="inline-flex items-center gap-1.5 font-bold text-xs sm:text-sm text-slate-900 truncate">
+                <span class="w-2.5 h-2.5 rounded-full shrink-0 ${p.dotClass}"></span>
+                ${p.name}
+              </span>
+              ${active ? `<span class="text-xs font-bold text-emerald-700">✓</span>` : ""}
+            </div>
+          </button>
+        `;
+      }).join("");
+    }
+
+    function renderBedSlots() {
+      const container = document.getElementById("bedSlotsContainer");
+      container.innerHTML = BED_GROUPS.map((g) => {
+        const arr = draftSlots[g.key] || [];
+        const gridCols = g.count === 1 ? "grid-cols-1" : "grid-cols-2";
+        const buttonsHtml = arr
+          .map((checked, idx) => {
+            const activeClass = g.isStroller
+              ? "bg-sky-600 text-white border-sky-600"
+              : "bg-emerald-600 text-white border-emerald-600";
+            const inactiveClass = g.isStroller
+              ? "bg-sky-50/70 text-sky-900 border-sky-200 active:bg-sky-100"
+              : "bg-white text-slate-700 border-slate-200 active:bg-slate-100";
+
+            return `
+              <button
+                type="button"
+                onclick="toggleBedSlot('${g.key}', ${idx})"
+                class="min-h-[38px] px-2.5 py-1.5 rounded-xl border text-xs font-bold flex items-center justify-between gap-1.5 transition cursor-pointer ${
+                  checked ? activeClass : inactiveClass
+                }"
+              >
+                <span class="truncate">${g.slotNames[idx]}</span>
+                <span class="w-4 h-4 rounded flex items-center justify-center text-[11px] font-extrabold ${
+                  checked ? "bg-white/25 text-white" : "border border-slate-300 text-transparent"
+                }">✓</span>
+              </button>
+            `;
+          })
+          .join("");
+
+        return `
+          <div class="bg-white rounded-xl border border-slate-200/90 p-2.5">
+            <div class="text-xs font-bold text-slate-800 mb-1.5 flex items-center justify-between">
+              <span class="${g.isStroller ? "text-sky-800" : ""}">${g.label}</span>
+              <span class="text-[11px] font-semibold text-slate-400">${arr.filter(Boolean).length}/${g.count}</span>
+            </div>
+            <div class="grid ${gridCols} gap-2">${buttonsHtml}</div>
+          </div>
+        `;
+      }).join("");
+    }
+
+    function toggleBedSlot(groupKey, idx) {
+      if (!draftSlots[groupKey]) return;
+      draftSlots[groupKey][idx] = !draftSlots[groupKey][idx];
+      renderBedSlots();
+      updatePreview();
+    }
+
+    function clearAllBedFlags() {
+      draftSlots = {
+        matrimoniale: [false, false],
+        divano: [false, false],
+        castello: [false, false],
+        campeggio: [false, false],
+        carrozzina: [false]
+      };
+      renderBedSlots();
+      updatePreview();
+    }
+
+    function selectProfile(id) {
+      selectedProfileId = id;
+      const p = getProfile(id);
+      draftSlots = cloneSlots(p.defaultSlots);
+      renderProfileSelector();
+      renderBedSlots();
+      updatePreview();
+    }
+
+    function populateWholeHouseSelect() {
+      const select = document.getElementById("wholeHouseProfile");
+      select.innerHTML = PROFILES.map((p) => `<option value="${p.id}">${p.name}</option>`).join("");
+    }
+
+    function openBookingModal(prefillDate = "2027-01-02") {
+      document.getElementById("editingBookingId").value = "";
+      document.getElementById("bookingModalTitle").textContent = "Nuova Prenotazione";
+      document.getElementById("deleteBookingBtn").classList.add("hidden");
+      document.getElementById("startDate").value = prefillDate;
+      document.getElementById("endDate").value = prefillDate;
+      document.getElementById("bookingNote").value = "";
+
+      const p = getProfile(selectedProfileId);
+      draftSlots = cloneSlots(p.defaultSlots);
+
+      renderProfileSelector();
+      renderBedSlots();
+      updatePreview();
+
+      const modal = document.getElementById("bookingModal");
+      modal.classList.remove("hidden");
+      modal.classList.add("flex");
+    }
+
+    function openEditBooking(id) {
+      const b = bookings.find((item) => item.id === id);
+      if (!b) return;
+
+      document.getElementById("editingBookingId").value = b.id;
+      document.getElementById("bookingModalTitle").textContent = "Modifica Prenotazione";
+      document.getElementById("deleteBookingBtn").classList.remove("hidden");
+      document.getElementById("startDate").value = b.startDate;
+      document.getElementById("endDate").value = b.endDate;
+      document.getElementById("bookingNote").value = b.note || "";
+
+      selectedProfileId = b.profileId;
+      const p = getProfile(b.profileId);
+      draftSlots = b.wholeHouse
+        ? getWholeHouseSlots()
+        : cloneSlots(b.slots || p.defaultSlots);
+
+      renderProfileSelector();
+      renderBedSlots();
+      updatePreview();
+
+      const modal = document.getElementById("bookingModal");
+      modal.classList.remove("hidden");
+      modal.classList.add("flex");
+    }
+
+    function closeBookingModal() {
+      const modal = document.getElementById("bookingModal");
+      modal.classList.add("hidden");
+      modal.classList.remove("flex");
+    }
+
+    function updatePreview() {
+      const start = document.getElementById("startDate").value;
+      const end = document.getElementById("endDate").value;
+      const editingId = document.getElementById("editingBookingId").value;
+      const preview = document.getElementById("allocationPreview");
+
+      if (!start || !end) {
+        preview.innerHTML = "";
+        return;
+      }
+
+      if (end < start) {
+        preview.innerHTML = `<p class="text-rose-700 font-semibold">La data di fine deve essere uguale o successiva alla data di inizio.</p>`;
+        return;
+      }
+
+      const profile = getProfile(selectedProfileId);
+      const mySum = summarizeSlots(draftSlots);
+      const otherBookings = bookings.filter((b) => b.id !== editingId);
+
+      let maxFreeFixed = 6;
+      let maxFreeCamp = 2;
+      let anyOverflow = false;
+      let anyStroller = mySum.carrUsed > 0;
+
+      const cur = parseDateISO(start);
+      const last = parseDateISO(end);
+      while (cur <= last) {
+        const iso = formatDateISO(cur);
+        const dayOthers = otherBookings.filter((b) => iso >= b.startDate && iso <= b.endDate);
+        const syntheticBooking = {
+          id: "preview",
+          profileId: selectedProfileId,
+          startDate: iso,
+          endDate: iso,
+          slots: cloneSlots(draftSlots),
+          wholeHouse: false
+        };
+        const dayState = computeDayState([...dayOthers, syntheticBooking]);
+        maxFreeFixed = Math.min(maxFreeFixed, dayState.freeFixed);
+        maxFreeCamp = Math.min(maxFreeCamp, dayState.freeCamp);
+        if (dayState.overflowFixed > 0 || dayState.overflowCamp > 0) anyOverflow = true;
+        if (dayState.sum.carrUsed > 0) anyStroller = true;
+        cur.setDate(cur.getDate() + 1);
+      }
+
+      const detailParts = [];
+      if (mySum.matUsed > 0) detailParts.push(`${mySum.matUsed} matrimoniale`);
+      if (mySum.divUsed > 0) detailParts.push(`${mySum.divUsed} divano letto`);
+      if (mySum.castUsed > 0) detailParts.push(`${mySum.castUsed} castello`);
+      if (mySum.campUsed > 0) detailParts.push(`${mySum.campUsed} lettino/i da campeggio`);
+      if (mySum.carrUsed > 0) detailParts.push(`+ 1 carrozzina`);
+      const chosenText = detailParts.length > 0 ? detailParts.join(" • ") : "Nessun posto flaggato";
+
+      const warnHtml = anyOverflow
+        ? `<p class="text-rose-700 font-bold">⚠️ Attenzione: in almeno un giorno del periodo si supera la capienza di casa.</p>`
+        : `<p class="text-slate-700">• <strong>Disponibilità residua minima nel periodo:</strong> ${maxFreeFixed} posti fissi • ${maxFreeCamp} lettini da campeggio</p>`;
+
+      const strollerHtml = anyStroller
+        ? `<p class="text-sky-800 font-semibold">• <strong>Carrozzina:</strong> + 1 carrozzina presente</p>`
+        : "";
+
+      preview.innerHTML = `
+        <p class="font-bold text-slate-900">${profile.name}: ${chosenText}</p>
+        ${warnHtml}
+        ${strollerHtml}
+      `;
+    }
+
+    function saveBooking(event) {
+      event.preventDefault();
+      const id = document.getElementById("editingBookingId").value;
+      const startDate = document.getElementById("startDate").value;
+      const endDate = document.getElementById("endDate").value;
+      const note = document.getElementById("bookingNote").value.trim();
+
+      if (endDate < startDate) {
+        alert("La data di fine non può essere precedente alla data di inizio.");
+        return;
+      }
+
+      const slotsCopy = cloneSlots(draftSlots);
+
+      if (id) {
+        const idx = bookings.findIndex((b) => b.id === id);
+        if (idx !== -1) {
+          bookings[idx] = {
+            ...bookings[idx],
+            profileId: selectedProfileId,
+            startDate,
+            endDate,
+            note,
+            slots: slotsCopy,
+            wholeHouse: false
+          };
+        }
+      } else {
+        bookings.push({
+          id: "bk_" + Date.now() + "_" + Math.random().toString(36).slice(2, 7),
+          profileId: selectedProfileId,
+          startDate,
+          endDate,
+          note,
+          slots: slotsCopy,
+          wholeHouse: false
+        });
+      }
+
+      saveBookings();
+      renderCalendar();
+      closeBookingModal();
+    }
+
+    function deleteCurrentBooking() {
+      const id = document.getElementById("editingBookingId").value;
+      if (!id) return;
+      bookings = bookings.filter((b) => b.id !== id);
+      saveBookings();
+      renderCalendar();
+      closeBookingModal();
+    }
+
+    function openWholeHouseModal() {
+      populateWholeHouseSelect();
+      document.getElementById("whStartDate").value = "2027-01-01";
+      document.getElementById("whEndDate").value = "2027-02-28";
+      document.getElementById("whNote").value = "";
+      const modal = document.getElementById("wholeHouseModal");
+      modal.classList.remove("hidden");
+      modal.classList.add("flex");
+    }
+
+    function closeWholeHouseModal() {
+      const modal = document.getElementById("wholeHouseModal");
+      modal.classList.add("hidden");
+      modal.classList.remove("flex");
+    }
+
+    function bookWholeHouse(event) {
+      event.preventDefault();
+      const profileId = document.getElementById("wholeHouseProfile").value;
+      const startDate = document.getElementById("whStartDate").value;
+      const endDate = document.getElementById("whEndDate").value;
+      const note = document.getElementById("whNote").value.trim() || "Tutta la casa";
+
+      if (endDate < startDate) {
+        alert("La data di fine non può essere precedente alla data di inizio.");
+        return;
+      }
+
+      bookings = bookings.filter((b) => !(b.startDate >= startDate && b.endDate <= endDate));
+      bookings.push({
+        id: "wh_" + Date.now(),
+        profileId,
+        startDate,
+        endDate,
+        note,
+        slots: getWholeHouseSlots(),
+        wholeHouse: true
+      });
+
+      saveBookings();
+      renderCalendar();
+      closeWholeHouseModal();
+    }
+
+    function freePeriod() {
+      const startDate = document.getElementById("whStartDate").value;
+      const endDate = document.getElementById("whEndDate").value;
+
+      if (!startDate || !endDate || endDate < startDate) {
+        alert("Inserisci un intervallo di date valido.");
+        return;
+      }
+
+      const updated = [];
+      bookings.forEach((b) => {
+        if (b.endDate < startDate || b.startDate > endDate) {
+          updated.push(b);
+          return;
+        }
+        if (b.startDate < startDate) {
+          const prevDay = parseDateISO(startDate);
+          prevDay.setDate(prevDay.getDate() - 1);
+          updated.push({
+            ...b,
+            id: b.id + "_a_" + Math.random().toString(36).slice(2, 5),
+            endDate: formatDateISO(prevDay)
+          });
+        }
+        if (b.endDate > endDate) {
+          const nextDay = parseDateISO(endDate);
+          nextDay.setDate(nextDay.getDate() + 1);
+          updated.push({
+            ...b,
+            id: b.id + "_b_" + Math.random().toString(36).slice(2, 5),
+            startDate: formatDateISO(nextDay)
+          });
+        }
+      });
+
+      bookings = updated;
+      saveBookings();
+      renderCalendar();
+      closeWholeHouseModal();
+    }
+
+    // Avvio iniziale
+    renderWhoIsWho();
+    populateWholeHouseSelect();
+    renderCalendar();
+  </script>
+</body>
+</html>
